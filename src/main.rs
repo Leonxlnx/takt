@@ -100,6 +100,66 @@ impl Profile {
                 noise: 0.035,
                 volume: 0.31,
             }),
+            "cream" | "nk-cream" => Some(Self {
+                name: "nk-cream",
+                body_hz: 132.0,
+                click_hz: 940.0,
+                duration_ms: 66,
+                body_decay: 42.0,
+                click_decay: 86.0,
+                noise: 0.055,
+                volume: 0.33,
+            }),
+            "buckling" | "buckling-spring" => Some(Self {
+                name: "buckling-spring",
+                body_hz: 188.0,
+                click_hz: 3100.0,
+                duration_ms: 88,
+                body_decay: 34.0,
+                click_decay: 68.0,
+                noise: 0.22,
+                volume: 0.30,
+            }),
+            "ink" | "ink-black" => Some(Self {
+                name: "ink-black",
+                body_hz: 88.0,
+                click_hz: 680.0,
+                duration_ms: 74,
+                body_decay: 36.0,
+                click_decay: 110.0,
+                noise: 0.045,
+                volume: 0.35,
+            }),
+            "tealios" | "turquoise-tealios" => Some(Self {
+                name: "turquoise-tealios",
+                body_hz: 156.0,
+                click_hz: 1320.0,
+                duration_ms: 50,
+                body_decay: 58.0,
+                click_decay: 124.0,
+                noise: 0.04,
+                volume: 0.29,
+            }),
+            "alpaca" => Some(Self {
+                name: "alpaca",
+                body_hz: 118.0,
+                click_hz: 860.0,
+                duration_ms: 60,
+                body_decay: 46.0,
+                click_decay: 98.0,
+                noise: 0.05,
+                volume: 0.32,
+            }),
+            "typewriter" => Some(Self {
+                name: "typewriter",
+                body_hz: 240.0,
+                click_hz: 3600.0,
+                duration_ms: 96,
+                body_decay: 30.0,
+                click_decay: 62.0,
+                noise: 0.26,
+                volume: 0.27,
+            }),
             _ => None,
         }
     }
@@ -156,7 +216,7 @@ impl Settings {
                         .ok_or_else(|| anyhow!("--profile requires a value"))?;
                     profile = Profile::named(&value).ok_or_else(|| {
                         anyhow!(
-                            "unknown profile '{value}'. Try red, holy-panda, alps-blue, box-navy, or topre"
+                            "unknown profile '{value}'. Use --help to list profiles"
                         )
                     })?;
                 }
@@ -184,7 +244,7 @@ impl Settings {
 
 fn print_help() {
     println!(
-        "Usage: keyme [--profile holy-panda] [--volume 75]\n\nProfiles: red, holy-panda, alps-blue, box-navy, topre"
+        "Usage: keyme [--profile holy-panda] [--volume 75]\n\nProfiles: red, holy-panda, alps-blue, box-navy, topre, nk-cream, buckling-spring, ink-black, turquoise-tealios, alpaca, typewriter"
     );
 }
 
