@@ -5,13 +5,21 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$exe = Join-Path $root "target\release\keyme.exe"
+$sourceRoot = Split-Path -Parent $root
+$exe = Join-Path $root "keyme.exe"
+if (-not (Test-Path $exe)) {
+    $exe = Join-Path $root "target\release\keyme.exe"
+}
 $configDir = Join-Path $env:APPDATA "Keyme"
 $configPath = Join-Path $configDir "config.json"
 
 if (-not (Test-Path $configPath)) {
     New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-    Copy-Item (Join-Path $root "config\default.json") $configPath -Force
+    $defaultConfig = Join-Path $root "config\default.json"
+    if (-not (Test-Path $defaultConfig)) {
+        $defaultConfig = Join-Path $sourceRoot "config\default.json"
+    }
+    Copy-Item $defaultConfig $configPath -Force
 }
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
@@ -23,7 +31,7 @@ if ($Volume -lt 0) {
 }
 
 if (-not (Test-Path $exe)) {
-    Push-Location $root
+    Push-Location $sourceRoot
     try {
         cargo build --release
     }

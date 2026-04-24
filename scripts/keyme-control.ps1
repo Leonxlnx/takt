@@ -4,6 +4,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $PSScriptRoot
+$sourceRoot = Split-Path -Parent $root
 $configDir = Join-Path $env:APPDATA "Keyme"
 $configPath = Join-Path $configDir "config.json"
 $startupShortcut = Join-Path ([Environment]::GetFolderPath("Startup")) "Keyme.lnk"
@@ -25,7 +26,11 @@ $profiles = @(
 function Ensure-Config {
     if (-not (Test-Path $configPath)) {
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-        Copy-Item (Join-Path $root "config\default.json") $configPath -Force
+        $defaultConfig = Join-Path $root "config\default.json"
+        if (-not (Test-Path $defaultConfig)) {
+            $defaultConfig = Join-Path $sourceRoot "config\default.json"
+        }
+        Copy-Item $defaultConfig $configPath -Force
     }
 }
 

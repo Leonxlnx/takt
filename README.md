@@ -24,11 +24,19 @@ Keyme includes 11 procedural profiles from soft thock to loud vintage click. See
 
 ## Install
 
+Download the release ZIP, extract it, then double-click:
+
+```text
+Setup-Keyme.cmd
+```
+
+For development installs, you can also run:
+
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-The installer builds the release binary and creates:
+The installer copies Keyme to `%LOCALAPPDATA%\Keyme` and creates:
 
 - `Keyme` desktop shortcut for the settings app.
 - `Start Keyme` and `Stop Keyme` desktop shortcuts.

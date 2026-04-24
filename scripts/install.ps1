@@ -1,17 +1,41 @@
 $ErrorActionPreference = "Stop"
 
-$root = Split-Path -Parent $PSScriptRoot
-$startVbs = Join-Path $PSScriptRoot "launch-hidden.vbs"
-$stopVbs = Join-Path $PSScriptRoot "stop-hidden.vbs"
-$controlVbs = Join-Path $PSScriptRoot "control-hidden.vbs"
+$sourceRoot = Split-Path -Parent $PSScriptRoot
+$installDir = Join-Path $env:LOCALAPPDATA "Keyme"
+$installScripts = Join-Path $installDir "scripts"
+$installConfig = Join-Path $installDir "config"
+$installAssets = Join-Path $installDir "assets"
+$sourceExe = Join-Path $sourceRoot "target\release\keyme.exe"
 
-Push-Location $root
-try {
-    cargo build --release
+if (-not (Test-Path $sourceExe)) {
+    $bundledExe = Join-Path $sourceRoot "keyme.exe"
+    if (Test-Path $bundledExe) {
+        $sourceExe = $bundledExe
+    }
+    else {
+        Push-Location $sourceRoot
+        try {
+            cargo build --release
+        }
+        finally {
+            Pop-Location
+        }
+    }
 }
-finally {
-    Pop-Location
-}
+
+& (Join-Path $PSScriptRoot "stop.ps1")
+
+New-Item -ItemType Directory -Path $installDir, $installScripts, $installConfig, $installAssets -Force | Out-Null
+Copy-Item $sourceExe (Join-Path $installDir "keyme.exe") -Force
+Copy-Item (Join-Path $PSScriptRoot "*") $installScripts -Recurse -Force
+Copy-Item (Join-Path $sourceRoot "config\*") $installConfig -Recurse -Force
+Copy-Item (Join-Path $sourceRoot "assets\*") $installAssets -Recurse -Force
+Copy-Item (Join-Path $sourceRoot "README.md") $installDir -Force
+Copy-Item (Join-Path $sourceRoot "LICENSE") $installDir -Force
+
+$startVbs = Join-Path $installScripts "launch-hidden.vbs"
+$stopVbs = Join-Path $installScripts "stop-hidden.vbs"
+$controlVbs = Join-Path $installScripts "control-hidden.vbs"
 
 $shell = New-Object -ComObject WScript.Shell
 $desktop = [Environment]::GetFolderPath("Desktop")
@@ -36,7 +60,7 @@ function New-VbsShortcut {
     $shortcut = $shell.CreateShortcut($Path)
     $shortcut.TargetPath = "$env:WINDIR\System32\wscript.exe"
     $shortcut.Arguments = "`"$VbsPath`""
-    $shortcut.WorkingDirectory = $root
+    $shortcut.WorkingDirectory = $installDir
     $shortcut.Description = $Description
     $shortcut.Save()
 }
@@ -77,5 +101,6 @@ New-VbsShortcut `
     -Description "Stop mechanical keyboard sounds"
 
 Write-Host "Installed Keyme."
+Write-Host "Install folder: $installDir"
 Write-Host "Desktop shortcuts: Keyme, Start Keyme, Stop Keyme"
 Write-Host "Startup shortcut: Keyme"
