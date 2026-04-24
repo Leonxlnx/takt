@@ -65,6 +65,8 @@ This stops Keyme and removes the shortcuts. It does not delete the source folder
 
 Keyme installs a Windows low-level keyboard hook so it can react to key presses. It only observes virtual-key codes, does not reconstruct typed text, does not store keystrokes, and does not use the network.
 
+See [docs/privacy.md](docs/privacy.md) and [docs/architecture.md](docs/architecture.md) for more detail.
+
 ## Development
 
 ```powershell
