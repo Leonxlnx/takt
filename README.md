@@ -1,67 +1,88 @@
 # Keyme
 
+![Keyme logo](assets/logo.svg)
+
 Mechanical keyboard sounds for Windows.
 
-This implementation is intentionally privacy-preserving:
+Keyme is a small Windows utility that adds satisfying switch-style audio to every key press. It runs locally, starts with Windows if you want it to, and includes a simple settings app for choosing sounds and volume.
 
-- It installs a Windows low-level keyboard hook.
-- It only observes virtual-key codes so it can choose pan/pitch.
-- It does not store text, reconstruct words, transmit data, or use the network.
-
-## Current Features
+## Features
 
 - Global keyboard sounds across apps.
-- Low-latency audio playback through the default Windows audio output.
-- Per-key stereo pan based on physical keyboard position.
-- Small pitch variation per key so repeated typing is less robotic.
-- Synthesized switch profiles: `red`, `holy-panda`, `alps-blue`, `box-navy`, `topre`.
+- Low-latency audio playback through your default Windows output.
+- Stereo panning based on approximate key position.
+- Per-key pitch variation so typing feels less repetitive.
+- 11 built-in synthesized switch profiles.
+- Small settings UI for profile, volume, status, and autostart.
+- Local-first privacy model with no telemetry and no network calls.
 
-## Run
+## Sound Profiles
 
-```powershell
-cargo run --release -- --profile holy-panda --volume 75
-```
+- `holy-panda`
+- `red`
+- `alps-blue`
+- `box-navy`
+- `topre`
+- `nk-cream`
+- `buckling-spring`
+- `ink-black`
+- `turquoise-tealios`
+- `alpaca`
+- `typewriter`
 
-Press `Ctrl+C` in the terminal to quit.
-
-## Easy Install
+## Install
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-This creates:
+The installer builds the release binary and creates:
 
-- `Start Keeby Windows` on the Desktop.
-- `Stop Keeby Windows` on the Desktop.
-- `Keeby Windows` in the Windows Startup folder so it starts after login.
-- Start Menu shortcuts under `Keeby Windows`.
+- `Keyme` desktop shortcut for the settings app.
+- `Start Keyme` and `Stop Keyme` desktop shortcuts.
+- Start Menu shortcuts under `Keyme`.
+- A Startup shortcut so Keyme runs after login.
 
-To remove the shortcuts and stop the app:
+## Use
+
+Open the `Keyme` desktop shortcut to change the profile, volume, or autostart setting.
+
+You can also run it directly:
+
+```powershell
+cargo run --release -- --profile holy-panda --volume 75
+```
+
+## Uninstall
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
-## Build
+This stops Keyme and removes the shortcuts. It does not delete the source folder.
+
+## Privacy
+
+Keyme installs a Windows low-level keyboard hook so it can react to key presses. It only observes virtual-key codes, does not reconstruct typed text, does not store keystrokes, and does not use the network.
+
+## Development
 
 ```powershell
 cargo build --release
+cargo run --release -- --help
 ```
 
-The binary will be at:
+The compiled app is written in Rust. The settings app and installer scripts are PowerShell/WinForms so the project stays easy to inspect and modify.
 
-```text
-target\release\keeby_windows.exe
-```
+## Roadmap
 
-## What Comes Next
+- Optional tray icon.
+- Licensed recorded WAV sound packs.
+- Import your own switch samples.
+- Mouse click and scroll sounds.
+- Visual keyboard overlay.
+- Signed installer.
 
-To reach Keeby-level polish on Windows, the next milestones are:
+## License
 
-- Add licensed recorded switch sample packs instead of runtime synthesis.
-- Add a tray app with toggle, volume, and profile selection.
-- Persist settings in `%APPDATA%`.
-- Add optional mouse click and wheel sounds.
-- Add a visualizer overlay.
-- Package as an installer with startup-at-login support.
+MIT
