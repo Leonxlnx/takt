@@ -100,6 +100,8 @@ New-VbsShortcut `
     -VbsPath $stopVbs `
     -Description "Stop mechanical keyboard sounds"
 
+& (Join-Path $installScripts "run.ps1")
+
 Write-Host "Installed Keyme."
 Write-Host "Install folder: $installDir"
 Write-Host "Desktop shortcuts: Keyme, Start Keyme, Stop Keyme"
