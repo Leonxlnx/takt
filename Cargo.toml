@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Mechanical keyboard sounds for Windows"
 license = "MIT"
-repository = "https://github.com/OWNER/keyme"
+repository = "https://github.com/Leonxlnx/keyme"
 
 [dependencies]
 anyhow = "1.0"
