@@ -5,15 +5,15 @@ $installDir = Join-Path $env:LOCALAPPDATA "Takt"
 $installScripts = Join-Path $installDir "scripts"
 $installConfig = Join-Path $installDir "config"
 $installAssets = Join-Path $installDir "assets"
+$installElectron = Join-Path $installDir "electron"
+$installNodeModules = Join-Path $installDir "node_modules"
 $sourceExe = Join-Path $sourceRoot "target\release\takt.exe"
-$sourceControlExe = Join-Path $sourceRoot "target\release\takt-control.exe"
+$sourceElectronExe = Join-Path $sourceRoot "node_modules\electron\dist\electron.exe"
 
-if (-not (Test-Path $sourceExe) -or -not (Test-Path $sourceControlExe)) {
+if (-not (Test-Path $sourceExe)) {
     $bundledExe = Join-Path $sourceRoot "takt.exe"
-    $bundledControlExe = Join-Path $sourceRoot "takt-control.exe"
-    if ((Test-Path $bundledExe) -and (Test-Path $bundledControlExe)) {
+    if (Test-Path $bundledExe) {
         $sourceExe = $bundledExe
-        $sourceControlExe = $bundledControlExe
     }
     else {
         Push-Location $sourceRoot
@@ -26,15 +26,28 @@ if (-not (Test-Path $sourceExe) -or -not (Test-Path $sourceControlExe)) {
     }
 }
 
+if (-not (Test-Path $sourceElectronExe)) {
+    Push-Location $sourceRoot
+    try {
+        npm install
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 & (Join-Path $PSScriptRoot "stop.ps1")
 Start-Sleep -Seconds 2
 
-New-Item -ItemType Directory -Path $installDir, $installScripts, $installConfig, $installAssets -Force | Out-Null
+New-Item -ItemType Directory -Path $installDir, $installScripts, $installConfig, $installAssets, $installElectron -Force | Out-Null
 Copy-Item $sourceExe (Join-Path $installDir "takt.exe") -Force
-Copy-Item $sourceControlExe (Join-Path $installDir "takt-control.exe") -Force
 Copy-Item (Join-Path $PSScriptRoot "*") $installScripts -Recurse -Force
 Copy-Item (Join-Path $sourceRoot "config\*") $installConfig -Recurse -Force
 Copy-Item (Join-Path $sourceRoot "assets\*") $installAssets -Recurse -Force
+Copy-Item (Join-Path $sourceRoot "electron\*") $installElectron -Recurse -Force
+Copy-Item (Join-Path $sourceRoot "package.json") $installDir -Force
+Copy-Item (Join-Path $sourceRoot "package-lock.json") $installDir -Force -ErrorAction SilentlyContinue
+Copy-Item (Join-Path $sourceRoot "node_modules") $installNodeModules -Recurse -Force
 Copy-Item (Join-Path $sourceRoot "README.md") $installDir -Force
 Copy-Item (Join-Path $sourceRoot "LICENSE") $installDir -Force
 
@@ -81,11 +94,13 @@ function New-ExeShortcut {
     param(
         [string]$Path,
         [string]$ExePath,
+        [string]$Arguments = "",
         [string]$Description
     )
 
     $shortcut = $shell.CreateShortcut($Path)
     $shortcut.TargetPath = $ExePath
+    $shortcut.Arguments = $Arguments
     $shortcut.WorkingDirectory = $installDir
     $shortcut.Description = $Description
     $iconPath = Join-Path $installAssets "takt.ico"
@@ -97,7 +112,8 @@ function New-ExeShortcut {
 
 New-ExeShortcut `
     -Path (Join-Path $desktop "Takt.lnk") `
-    -ExePath (Join-Path $installDir "takt-control.exe") `
+    -ExePath (Join-Path $installNodeModules "electron\dist\electron.exe") `
+    -Arguments "`"$installDir`"" `
     -Description "Open Takt"
 
 New-VbsShortcut `
@@ -107,7 +123,8 @@ New-VbsShortcut `
 
 New-ExeShortcut `
     -Path (Join-Path $startMenuFolder "Takt.lnk") `
-    -ExePath (Join-Path $installDir "takt-control.exe") `
+    -ExePath (Join-Path $installNodeModules "electron\dist\electron.exe") `
+    -Arguments "`"$installDir`"" `
     -Description "Open Takt"
 
 New-VbsShortcut `

@@ -3,7 +3,7 @@
 Takt has two layers:
 
 - `src/main.rs`: the Rust background engine that listens for global key presses and plays audio.
-- `src/bin/takt-control.rs`: the native Windows settings app that edits user configuration and starts or stops the engine.
+- `electron/`: the Electron settings app that edits user configuration and starts or stops the engine.
 
 ## Keyboard Input
 

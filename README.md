@@ -2,7 +2,7 @@
 
 Mechanical keyboard sounds for Windows.
 
-Takt is a small Windows utility that adds satisfying switch-style audio to every key press. It runs locally, starts with Windows if you want it to, and includes a native settings app for choosing sounds and volume.
+Takt is a small Windows utility that adds satisfying switch-style audio to every key press. It runs locally, starts with Windows if you want it to, and includes an Electron settings app for choosing sounds and volume.
 
 ## Features
 
@@ -11,7 +11,7 @@ Takt is a small Windows utility that adds satisfying switch-style audio to every
 - Stereo panning based on approximate key position.
 - Per-key pitch variation so typing feels less repetitive.
 - 17 built-in synthesized switch profiles.
-- Native Windows settings app. No PowerShell UI.
+- Electron settings app. No PowerShell UI.
 - Local-first privacy model with no telemetry and no network calls.
 
 ## Sound Profiles
@@ -71,7 +71,7 @@ cargo build --release
 cargo run --release --bin takt -- --help
 ```
 
-The sound engine and settings app are written in Rust. Installer scripts are used only for copying files and creating Windows shortcuts.
+The sound engine is written in Rust. The settings app is Electron. Installer scripts are used only for copying files and creating Windows shortcuts.
 
 ## Roadmap
 

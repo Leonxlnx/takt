@@ -9,7 +9,6 @@ repository = "https://github.com/Leonxlnx/takt"
 [dependencies]
 anyhow = "1.0"
 ctrlc = "3.4"
-native-windows-gui = "1.0"
 rodio = "0.19"
 windows = { version = "0.58", features = [
     "Win32_Foundation",
