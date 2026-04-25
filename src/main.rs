@@ -316,7 +316,7 @@ fn volume_to_gain(percent: f32) -> f32 {
     if normalized <= 0.0 {
         0.0
     } else {
-        0.08 + normalized.powf(0.72) * 0.92
+        0.16 + normalized.powf(0.68) * 2.84
     }
 }
 
@@ -468,7 +468,7 @@ impl SwitchSource {
 }
 
 fn soft_clip(sample: f32) -> f32 {
-    (sample * 1.8).tanh() * 0.62
+    (sample * 1.45).tanh() * 0.96
 }
 
 impl Iterator for SwitchSource {
