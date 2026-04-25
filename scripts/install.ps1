@@ -95,7 +95,9 @@ New-VbsShortcut `
     -Description "Stop mechanical keyboard sounds"
 
 & (Join-Path $installScripts "run.ps1")
-Start-Sleep -Milliseconds 600
+for ($i = 0; $i -lt 10 -and -not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue); $i++) {
+    Start-Sleep -Milliseconds 500
+}
 
 if (-not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue)) {
     $configPath = Join-Path $env:APPDATA "Keyme\config.json"
@@ -104,7 +106,9 @@ if (-not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue)) {
         -FilePath (Join-Path $installDir "keyme.exe") `
         -ArgumentList @("--profile", $config.profile, "--volume", "$($config.volume)") `
         -WindowStyle Hidden
-    Start-Sleep -Milliseconds 600
+    for ($i = 0; $i -lt 10 -and -not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue); $i++) {
+        Start-Sleep -Milliseconds 500
+    }
 }
 
 Write-Host "Installed Keyme."
