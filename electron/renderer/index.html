@@ -8,45 +8,64 @@
   </head>
   <body>
     <main class="shell">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Windows keyboard sound</p>
-          <h1>Takt</h1>
-          <p class="summary">A clean local desktop app for realistic keyboard sound profiles.</p>
+      <section class="brand">
+        <div class="mark" aria-hidden="true">
+          <span></span>
         </div>
+        <p class="eyebrow">Local Windows audio</p>
+        <h1>Takt</h1>
+        <p class="summary">Mechanical keyboard sound that feels quiet, deliberate, and fast.</p>
         <div id="status" class="status">Checking...</div>
+        <div class="privacy">
+          <strong>Private by design</strong>
+          <span>No telemetry, no network calls, no stored typed text.</span>
+        </div>
       </section>
 
       <section class="panel">
-        <label class="field">
-          <span>Sound profile</span>
-          <select id="profile">
-            <option value="holy-panda">Holy Panda - tactile thock</option>
-            <option value="oil-king">Oil King - deep linear</option>
-            <option value="topre">Topre - soft dome</option>
-            <option value="box-jade">Box Jade - crisp click</option>
-            <option value="silent-tactile">Silent Tactile - muted</option>
-            <option value="ink-black">Ink Black - low thock</option>
-            <option value="nk-cream">NK Cream - smooth pop</option>
-            <option value="buckling-spring">Buckling Spring - vintage</option>
-            <option value="mx-black">MX Black - classic linear</option>
-            <option value="alps-blue">Alps Blue - bright click</option>
-            <option value="ceramic">Ceramic - clean clack</option>
-            <option value="terminal">Terminal - retro board</option>
-            <option value="alpaca">Alpaca - soft pop</option>
-            <option value="typewriter">Typewriter - sharp strike</option>
-          </select>
-        </label>
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow dark">Sound engine</p>
+            <h2>Preferences</h2>
+          </div>
+          <button id="openConfig" class="link-button">Config file</button>
+        </div>
 
-        <label class="field">
-          <span>Volume <strong id="volumeValue">65%</strong></span>
-          <input id="volume" type="range" min="0" max="100" value="65" />
-        </label>
+        <div class="settings-grid">
+          <label class="field profile-field">
+            <span>Profile</span>
+            <select id="profile">
+              <option value="holy-panda">Holy Panda - tactile thock</option>
+              <option value="oil-king">Oil King - deep linear</option>
+              <option value="topre">Topre - soft dome</option>
+              <option value="box-jade">Box Jade - crisp click</option>
+              <option value="silent-tactile">Silent Tactile - muted</option>
+              <option value="ink-black">Ink Black - low thock</option>
+              <option value="nk-cream">NK Cream - smooth pop</option>
+              <option value="buckling-spring">Buckling Spring - vintage</option>
+              <option value="mx-black">MX Black - classic linear</option>
+              <option value="alps-blue">Alps Blue - bright click</option>
+              <option value="ceramic">Ceramic - clean clack</option>
+              <option value="terminal">Terminal - retro board</option>
+              <option value="alpaca">Alpaca - soft pop</option>
+              <option value="typewriter">Typewriter - sharp strike</option>
+            </select>
+            <small id="profileHint">Rounded tactile thock with a clean bottom-out.</small>
+          </label>
 
-        <label class="toggle">
-          <input id="autostart" type="checkbox" />
-          <span>Start sound engine with Windows</span>
-        </label>
+          <label class="field volume-field">
+            <span>Volume <strong id="volumeValue">65%</strong></span>
+            <input id="volume" type="range" min="0" max="100" value="65" />
+          </label>
+
+          <label class="toggle">
+            <input id="autostart" type="checkbox" />
+            <span>
+              <strong>Launch on sign-in</strong>
+              <small>Start the sound engine when Windows starts.</small>
+            </span>
+          </label>
+        </div>
 
         <div class="actions">
           <button id="apply" class="secondary">Save</button>
@@ -54,11 +73,6 @@
           <button id="stop" class="ghost">Stop sound</button>
         </div>
       </section>
-
-      <footer>
-        <span>Local only. No telemetry. No typed text is stored.</span>
-        <button id="openConfig">Open config</button>
-      </footer>
     </main>
 
     <script src="./app.js"></script>
