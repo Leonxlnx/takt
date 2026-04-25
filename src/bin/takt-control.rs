@@ -59,38 +59,39 @@ fn run() -> Result<(), String> {
 
     let events_app = Rc::clone(&app);
     let window_handle = app.borrow().window.handle;
-    let handler = nwg::full_bind_event_handler(&window_handle, move |event, _event_data, handle| {
-        if event == nwg::Event::OnWindowClose {
-            nwg::stop_thread_dispatch();
-            return;
-        }
+    let handler =
+        nwg::full_bind_event_handler(&window_handle, move |event, _event_data, handle| {
+            if event == nwg::Event::OnWindowClose {
+                nwg::stop_thread_dispatch();
+                return;
+            }
 
-        let app = events_app.borrow();
-        if event == nwg::Event::OnButtonClick && handle == app.apply.handle {
-            let settings = app.read_settings();
-            let _ = save_settings(&settings);
-            let _ = set_autostart(settings.autostart);
-            app.set_status("Settings saved");
-        }
+            let app = events_app.borrow();
+            if event == nwg::Event::OnButtonClick && handle == app.apply.handle {
+                let settings = app.read_settings();
+                let _ = save_settings(&settings);
+                let _ = set_autostart(settings.autostart);
+                app.set_status("Settings saved");
+            }
 
-        if event == nwg::Event::OnButtonClick && handle == app.restart.handle {
-            let settings = app.read_settings();
-            let _ = save_settings(&settings);
-            let _ = set_autostart(settings.autostart);
-            let _ = stop_engine();
-            let _ = start_engine(&settings);
-            app.set_status("Status: running");
-        }
+            if event == nwg::Event::OnButtonClick && handle == app.restart.handle {
+                let settings = app.read_settings();
+                let _ = save_settings(&settings);
+                let _ = set_autostart(settings.autostart);
+                let _ = stop_engine();
+                let _ = start_engine(&settings);
+                app.set_status("Status: running");
+            }
 
-        if event == nwg::Event::OnButtonClick && handle == app.stop.handle {
-            let _ = stop_engine();
-            app.set_status("Status: stopped");
-        }
+            if event == nwg::Event::OnButtonClick && handle == app.stop.handle {
+                let _ = stop_engine();
+                app.set_status("Status: stopped");
+            }
 
-        if event == nwg::Event::OnHorizontalScroll && handle == app.volume.handle {
-            app.update_volume_label();
-        }
-    });
+            if event == nwg::Event::OnHorizontalScroll && handle == app.volume.handle {
+                app.update_volume_label();
+            }
+        });
 
     nwg::dispatch_thread_events();
     nwg::unbind_event_handler(&handler);
@@ -476,7 +477,13 @@ fn create_shortcut(path: &Path, target: &Path, description: &str) -> Result<(), 
     );
 
     Command::new("powershell.exe")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
+        .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            &script,
+        ])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
