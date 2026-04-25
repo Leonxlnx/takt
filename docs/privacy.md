@@ -1,12 +1,12 @@
 # Privacy
 
-Keyme is intentionally local-only.
+Takt is intentionally local-only.
 
-## What Keyme Reads
+## What Takt Reads
 
-Keyme reads Windows virtual-key codes such as `A`, `Space`, or `Enter`. These codes are used to choose sound position and pitch variation.
+Takt reads Windows virtual-key codes such as `A`, `Space`, or `Enter`. These codes are used to choose sound position and pitch variation.
 
-## What Keyme Does Not Do
+## What Takt Does Not Do
 
 - It does not store key presses.
 - It does not reconstruct typed words.
@@ -17,4 +17,4 @@ Keyme reads Windows virtual-key codes such as `A`, `Space`, or `Enter`. These co
 
 ## Why a Keyboard Hook Is Needed
 
-Windows requires a global keyboard hook for an app to react to keystrokes outside its own window. Keyme uses that hook only to trigger sound playback.
+Windows requires a global keyboard hook for an app to react to keystrokes outside its own window. Takt uses that hook only to trigger sound playback.

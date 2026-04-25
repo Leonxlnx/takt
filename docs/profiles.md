@@ -1,6 +1,6 @@
 # Profiles
 
-Keyme's built-in profiles are procedural approximations. They are designed to create different typing textures without bundling third-party recordings.
+Takt's built-in profiles are procedural approximations. They are designed to create different typing textures without bundling third-party recordings.
 
 | Profile | Character |
 | --- | --- |

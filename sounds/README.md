@@ -1,6 +1,6 @@
 # Sound Packs
 
-Keyme currently ships synthesized profiles only. This folder is reserved for future recorded switch packs.
+Takt currently ships synthesized profiles only. This folder is reserved for future recorded switch packs.
 
 Rules for future audio assets:
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for considering a contribution to Keyme.
+Thanks for considering a contribution to Takt.
 
 ## Development
 

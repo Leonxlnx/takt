@@ -6,11 +6,11 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $sourceRoot = Split-Path -Parent $root
-$exe = Join-Path $root "keyme.exe"
+$exe = Join-Path $root "takt.exe"
 if (-not (Test-Path $exe)) {
-    $exe = Join-Path $root "target\release\keyme.exe"
+    $exe = Join-Path $root "target\release\takt.exe"
 }
-$configDir = Join-Path $env:APPDATA "Keyme"
+$configDir = Join-Path $env:APPDATA "Takt"
 $configPath = Join-Path $configDir "config.json"
 
 if (-not (Test-Path $configPath)) {
@@ -40,7 +40,7 @@ if (-not (Test-Path $exe)) {
     }
 }
 
-$existing = Get-Process -Name "keyme" -ErrorAction SilentlyContinue
+$existing = Get-Process -Name "takt" -ErrorAction SilentlyContinue
 if ($existing) {
     exit 0
 }

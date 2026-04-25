@@ -1,12 +1,12 @@
-# Keyme
+# Takt
 
-![Keyme logo](assets/logo.svg)
+![Takt logo](assets/logo.svg)
 
-![Keyme settings preview](assets/app-preview.svg)
+![Takt Windows app screenshot](assets/screenshot.svg)
 
 Mechanical keyboard sounds for Windows.
 
-Keyme is a small Windows utility that adds satisfying switch-style audio to every key press. It runs locally, starts with Windows if you want it to, and includes a simple settings app for choosing sounds and volume.
+Takt is a small Windows utility that adds satisfying switch-style audio to every key press. It runs locally, starts with Windows if you want it to, and includes a native settings app for choosing sounds and volume.
 
 ## Features
 
@@ -15,19 +15,19 @@ Keyme is a small Windows utility that adds satisfying switch-style audio to ever
 - Stereo panning based on approximate key position.
 - Per-key pitch variation so typing feels less repetitive.
 - 17 built-in synthesized switch profiles.
-- Small settings UI for profile, volume, status, and autostart.
+- Native Windows settings app. No PowerShell UI.
 - Local-first privacy model with no telemetry and no network calls.
 
 ## Sound Profiles
 
-Keyme includes 17 procedural profiles from soft thock to loud vintage click. See [docs/profiles.md](docs/profiles.md).
+Takt includes 17 procedural profiles from soft thock to loud vintage click. See [docs/profiles.md](docs/profiles.md).
 
 ## Install
 
 Download the release ZIP, extract it, then double-click:
 
 ```text
-Setup-Keyme.cmd
+Setup-Takt.cmd
 ```
 
 For development installs, you can also run:
@@ -36,22 +36,22 @@ For development installs, you can also run:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-The installer copies Keyme to `%LOCALAPPDATA%\Keyme` and creates:
+The installer copies Takt to `%LOCALAPPDATA%\Takt` and creates:
 
-- `Keyme` desktop shortcut for the settings app.
-- Start Menu shortcuts under `Keyme`.
-- A Startup shortcut so Keyme runs after login.
+- `Takt` desktop shortcut for the native settings app.
+- Start Menu shortcuts under `Takt`.
+- A Startup shortcut so Takt runs after login.
 
 See [docs/windows-install.md](docs/windows-install.md) for details.
 
 ## Use
 
-Open the `Keyme` desktop shortcut to change the profile, volume, or autostart setting.
+Open the `Takt` desktop shortcut to change the profile, volume, or autostart setting.
 
 You can also run it directly:
 
 ```powershell
-cargo run --release -- --profile holy-panda --volume 75
+cargo run --release --bin takt -- --profile holy-panda --volume 75
 ```
 
 ## Uninstall
@@ -60,11 +60,11 @@ cargo run --release -- --profile holy-panda --volume 75
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
-This stops Keyme and removes the installed app. It does not delete a cloned source folder.
+This stops Takt and removes the installed app. It does not delete a cloned source folder.
 
 ## Privacy
 
-Keyme installs a Windows low-level keyboard hook so it can react to key presses. It only observes virtual-key codes, does not reconstruct typed text, does not store keystrokes, and does not use the network.
+Takt installs a Windows low-level keyboard hook so it can react to key presses. It only observes virtual-key codes, does not reconstruct typed text, does not store keystrokes, and does not use the network.
 
 See [docs/privacy.md](docs/privacy.md) and [docs/architecture.md](docs/architecture.md) for more detail.
 
@@ -72,10 +72,10 @@ See [docs/privacy.md](docs/privacy.md) and [docs/architecture.md](docs/architect
 
 ```powershell
 cargo build --release
-cargo run --release -- --help
+cargo run --release --bin takt -- --help
 ```
 
-The compiled app is written in Rust. The settings app and installer scripts are PowerShell/WinForms so the project stays easy to inspect and modify.
+The sound engine and settings app are written in Rust. Installer scripts are used only for copying files and creating Windows shortcuts.
 
 ## Roadmap
 

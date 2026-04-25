@@ -1,9 +1,9 @@
 # Architecture
 
-Keyme has two layers:
+Takt has two layers:
 
 - `src/main.rs`: the Rust background engine that listens for global key presses and plays audio.
-- `scripts/keyme-control.ps1`: the Windows settings app that edits user configuration and starts or stops the engine.
+- `src/bin/takt-control.rs`: the native Windows settings app that edits user configuration and starts or stops the engine.
 
 ## Keyboard Input
 
@@ -23,7 +23,7 @@ The audio engine uses `rodio` and generates short stereo switch sounds at runtim
 User settings live at:
 
 ```text
-%APPDATA%\Keyme\config.json
+%APPDATA%\Takt\config.json
 ```
 
 The settings app writes this file. The launcher script reads it before starting the engine.

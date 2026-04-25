@@ -1,33 +1,33 @@
 # Windows Install
 
-Keyme is Windows-only.
+Takt is Windows-only.
 
 ## Normal Install
 
 1. Download the release ZIP from GitHub.
 2. Extract the ZIP.
-3. Double-click `Setup-Keyme.cmd`.
+3. Double-click `Setup-Takt.cmd`.
 
-Setup installs Keyme to:
+Setup installs Takt to:
 
 ```text
-%LOCALAPPDATA%\Keyme
+%LOCALAPPDATA%\Takt
 ```
 
 It creates one Desktop shortcut:
 
 ```text
-Keyme
+Takt
 ```
 
-It also creates a Startup shortcut so Keyme launches after Windows login.
+It also creates a Startup shortcut so Takt launches after Windows login.
 
 ## Uninstall
 
 Run:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\Keyme\scripts\uninstall.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\Takt\scripts\uninstall.ps1"
 ```
 
-The uninstall script stops Keyme, removes shortcuts, and removes the installed app folder.
+The uninstall script stops Takt, removes shortcuts, and removes the installed app folder.

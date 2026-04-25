@@ -1,6 +1,6 @@
 # Security Policy
 
-Keyme is designed to stay local.
+Takt is designed to stay local.
 
 - It does not send analytics.
 - It does not use the network.

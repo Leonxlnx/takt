@@ -1,11 +1,8 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="118" fill="#F4EFE5"/>
-  <rect x="76" y="142" width="360" height="228" rx="54" fill="#17211F"/>
-  <rect x="104" y="170" width="304" height="172" rx="34" fill="#22312E"/>
-  <rect x="132" y="204" width="58" height="46" rx="13" fill="#E7D7B4"/>
-  <rect x="204" y="204" width="58" height="46" rx="13" fill="#E7D7B4"/>
-  <rect x="276" y="204" width="58" height="46" rx="13" fill="#E7D7B4"/>
-  <rect x="132" y="266" width="202" height="46" rx="16" fill="#D88B5B"/>
-  <path d="M366 213C384 225 394 241 394 256C394 271 384 287 366 299" stroke="#86B99A" stroke-width="18" stroke-linecap="round"/>
-  <path d="M397 185C424 204 440 230 440 256C440 282 424 308 397 327" stroke="#86B99A" stroke-width="14" stroke-linecap="round" opacity="0.72"/>
+  <rect width="512" height="512" rx="112" fill="#111614"/>
+  <path d="M143 154H369" stroke="#F2E7D2" stroke-width="34" stroke-linecap="round"/>
+  <path d="M256 154V358" stroke="#F2E7D2" stroke-width="34" stroke-linecap="round"/>
+  <path d="M178 281C215 318 297 318 334 281" stroke="#D88A58" stroke-width="26" stroke-linecap="round"/>
+  <path d="M381 211C410 239 410 273 381 301" stroke="#89B59A" stroke-width="22" stroke-linecap="round"/>
+  <path d="M417 177C465 223 465 289 417 335" stroke="#89B59A" stroke-width="14" stroke-linecap="round" opacity="0.64"/>
 </svg>
