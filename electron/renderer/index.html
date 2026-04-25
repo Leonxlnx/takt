@@ -8,26 +8,17 @@
   </head>
   <body>
     <main class="shell">
-      <section class="brand">
-        <div class="mark" aria-hidden="true">
-          <span></span>
+      <header class="header">
+        <div>
+          <h1>Takt</h1>
+          <p>Keyboard sounds for Windows</p>
         </div>
-        <p class="eyebrow">Local Windows audio</p>
-        <h1>Takt</h1>
-        <p class="summary">Mechanical keyboard sound that feels quiet, deliberate, and fast.</p>
         <div id="status" class="status">Checking...</div>
-        <div class="privacy">
-          <strong>Private by design</strong>
-          <span>No telemetry, no network calls, no stored typed text.</span>
-        </div>
-      </section>
+      </header>
 
       <section class="panel">
         <div class="panel-header">
-          <div>
-            <p class="eyebrow dark">Sound engine</p>
-            <h2>Preferences</h2>
-          </div>
+          <h2>Settings</h2>
           <button id="openConfig" class="link-button">Config file</button>
         </div>
 
@@ -73,6 +64,8 @@
           <button id="stop" class="ghost">Stop sound</button>
         </div>
       </section>
+
+      <p class="footer">Local only. No telemetry. No typed text is stored.</p>
     </main>
 
     <script src="./app.js"></script>
