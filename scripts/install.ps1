@@ -62,6 +62,10 @@ function New-VbsShortcut {
     $shortcut.Arguments = "`"$VbsPath`""
     $shortcut.WorkingDirectory = $installDir
     $shortcut.Description = $Description
+    $iconPath = Join-Path $installAssets "keyme.ico"
+    if (Test-Path $iconPath) {
+        $shortcut.IconLocation = $iconPath
+    }
     $shortcut.Save()
 }
 
