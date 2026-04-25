@@ -24,6 +24,7 @@ if (-not (Test-Path $sourceExe)) {
 }
 
 & (Join-Path $PSScriptRoot "stop.ps1")
+Start-Sleep -Seconds 2
 
 New-Item -ItemType Directory -Path $installDir, $installScripts, $installConfig, $installAssets -Force | Out-Null
 Copy-Item $sourceExe (Join-Path $installDir "keyme.exe") -Force
