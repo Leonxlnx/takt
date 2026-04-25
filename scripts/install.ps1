@@ -112,6 +112,10 @@ if (-not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue)) {
     }
 }
 
+if (-not (Get-Process -Name "keyme" -ErrorAction SilentlyContinue)) {
+    Start-Process -FilePath "$env:WINDIR\System32\wscript.exe" -ArgumentList "`"$startVbs`""
+}
+
 Write-Host "Installed Keyme."
 Write-Host "Install folder: $installDir"
 Write-Host "Desktop shortcut: Keyme"
