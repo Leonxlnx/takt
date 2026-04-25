@@ -9,6 +9,6 @@
     "check": "node electron/check.cjs"
   },
   "devDependencies": {
-    "electron": "^30.5.1"
+    "electron": "^41.3.0"
   }
 }
