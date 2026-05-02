@@ -40,6 +40,9 @@ struct KeyEvent {
 enum SoundMode {
     Keys,
     Melody,
+    Piano,
+    Guitar,
+    Chords,
 }
 
 impl SoundMode {
@@ -47,6 +50,9 @@ impl SoundMode {
         match name.to_ascii_lowercase().as_str() {
             "keys" | "switch" | "switches" => Some(Self::Keys),
             "melody" | "song" | "tones" => Some(Self::Melody),
+            "piano" => Some(Self::Piano),
+            "guitar" | "pluck" => Some(Self::Guitar),
+            "chords" | "chord" => Some(Self::Chords),
             _ => None,
         }
     }
@@ -351,9 +357,12 @@ impl Settings {
                 "--mode" | "-m" => {
                     let value = args
                         .next()
-                        .ok_or_else(|| anyhow!("--mode requires keys or melody"))?;
-                    mode = SoundMode::named(&value)
-                        .ok_or_else(|| anyhow!("unknown mode '{value}'. Try keys or melody"))?;
+                        .ok_or_else(|| anyhow!("--mode requires a value"))?;
+                    mode = SoundMode::named(&value).ok_or_else(|| {
+                        anyhow!(
+                            "unknown mode '{value}'. Try keys, piano, guitar, melody, or chords"
+                        )
+                    })?;
                 }
                 "--help" | "-h" => {
                     print_help();
@@ -373,7 +382,7 @@ impl Settings {
 
 fn print_help() {
     println!(
-        "Usage: takt [--mode keys|melody] [--profile clean-muted] [--volume 75]\n\nClean profiles: clean-muted, clean-thock, soft-linear, studio-pop, silent-tactile"
+        "Usage: takt [--mode keys|piano|guitar|melody|chords] [--profile clean-muted] [--volume 75]\n\nClean profiles: clean-muted, clean-thock, soft-linear, studio-pop, silent-tactile"
     );
 }
 
@@ -406,6 +415,21 @@ fn run_audio(rx: mpsc::Receiver<KeyEvent>, settings: Settings) -> Result<()> {
             }
             SoundMode::Melody => {
                 let source = MelodySource::new(melody_step, settings.master_volume, pan);
+                melody_step = melody_step.wrapping_add(1);
+                handle.play_raw(source.convert_samples())?;
+            }
+            SoundMode::Piano => {
+                let source = PianoSource::new(melody_step, settings.master_volume, pan);
+                melody_step = melody_step.wrapping_add(1);
+                handle.play_raw(source.convert_samples())?;
+            }
+            SoundMode::Guitar => {
+                let source = GuitarSource::new(melody_step, settings.master_volume, pan);
+                melody_step = melody_step.wrapping_add(1);
+                handle.play_raw(source.convert_samples())?;
+            }
+            SoundMode::Chords => {
+                let source = ChordSource::new(melody_step, settings.master_volume, pan);
                 melody_step = melody_step.wrapping_add(1);
                 handle.play_raw(source.convert_samples())?;
             }
@@ -554,6 +578,19 @@ const POP_MELODY: [f32; 32] = [
     523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 523.25,
 ];
 
+const POP_BASS: [f32; 8] = [261.63, 392.0, 440.0, 349.23, 261.63, 329.63, 392.0, 349.23];
+
+const POP_CHORDS: [[f32; 4]; 8] = [
+    [261.63, 329.63, 392.0, 523.25],
+    [392.0, 493.88, 587.33, 783.99],
+    [440.0, 523.25, 659.25, 880.0],
+    [349.23, 440.0, 523.25, 698.46],
+    [293.66, 349.23, 440.0, 587.33],
+    [329.63, 392.0, 493.88, 659.25],
+    [392.0, 493.88, 659.25, 783.99],
+    [261.63, 329.63, 392.0, 659.25],
+];
+
 struct MelodySource {
     sample_rate: u32,
     total_frames: u32,
@@ -589,6 +626,293 @@ impl MelodySource {
         let fifth = (TAU * self.frequency * 1.5 * t).sin() * 0.12;
         soft_clip((fundamental + octave + fifth) * env * self.master_volume * 0.34)
     }
+}
+
+struct PianoSource {
+    sample_rate: u32,
+    total_frames: u32,
+    frame: u32,
+    channel: u16,
+    frequency: f32,
+    pan: f32,
+    master_volume: f32,
+}
+
+impl PianoSource {
+    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+        let sample_rate = 48_000;
+        let total_frames = (sample_rate as f32 * 0.58) as u32;
+        Self {
+            sample_rate,
+            total_frames,
+            frame: 0,
+            channel: 0,
+            frequency: POP_MELODY[step % POP_MELODY.len()],
+            pan,
+            master_volume,
+        }
+    }
+
+    fn mono_sample(&self) -> f32 {
+        piano_note(
+            self.frequency,
+            self.frame,
+            self.sample_rate,
+            self.master_volume * 0.26,
+        )
+    }
+}
+
+impl Iterator for PianoSource {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mono = self.mono_sample();
+        stereo_next(
+            &mut self.frame,
+            &mut self.channel,
+            self.total_frames,
+            self.pan,
+            mono,
+        )
+    }
+}
+
+impl Source for PianoSource {
+    fn current_frame_len(&self) -> Option<usize> {
+        Some(((self.total_frames - self.frame) * 2 - self.channel as u32) as usize)
+    }
+
+    fn channels(&self) -> u16 {
+        2
+    }
+
+    fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        Some(Duration::from_millis(580))
+    }
+}
+
+struct ChordSource {
+    sample_rate: u32,
+    total_frames: u32,
+    frame: u32,
+    channel: u16,
+    chord: [f32; 4],
+    bass: f32,
+    pan: f32,
+    master_volume: f32,
+}
+
+impl ChordSource {
+    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+        let sample_rate = 48_000;
+        let total_frames = (sample_rate as f32 * 0.78) as u32;
+        Self {
+            sample_rate,
+            total_frames,
+            frame: 0,
+            channel: 0,
+            chord: POP_CHORDS[step % POP_CHORDS.len()],
+            bass: POP_BASS[step % POP_BASS.len()],
+            pan,
+            master_volume,
+        }
+    }
+
+    fn mono_sample(&self) -> f32 {
+        let bass = piano_note(
+            self.bass,
+            self.frame,
+            self.sample_rate,
+            self.master_volume * 0.10,
+        );
+        let chord = self
+            .chord
+            .iter()
+            .map(|freq| {
+                piano_note(
+                    *freq,
+                    self.frame,
+                    self.sample_rate,
+                    self.master_volume * 0.095,
+                )
+            })
+            .sum::<f32>();
+        soft_clip(bass + chord)
+    }
+}
+
+impl Iterator for ChordSource {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mono = self.mono_sample();
+        stereo_next(
+            &mut self.frame,
+            &mut self.channel,
+            self.total_frames,
+            self.pan,
+            mono,
+        )
+    }
+}
+
+impl Source for ChordSource {
+    fn current_frame_len(&self) -> Option<usize> {
+        Some(((self.total_frames - self.frame) * 2 - self.channel as u32) as usize)
+    }
+
+    fn channels(&self) -> u16 {
+        2
+    }
+
+    fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        Some(Duration::from_millis(780))
+    }
+}
+
+struct GuitarSource {
+    sample_rate: u32,
+    total_frames: u32,
+    frame: u32,
+    channel: u16,
+    buffer: Vec<f32>,
+    index: usize,
+    pan: f32,
+    master_volume: f32,
+}
+
+impl GuitarSource {
+    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+        let sample_rate = 48_000;
+        let frequency = POP_MELODY[step % POP_MELODY.len()] * 0.5;
+        let delay = (sample_rate as f32 / frequency).max(2.0) as usize;
+        let mut seed = 0x1234_5678u32 ^ step as u32;
+        let mut buffer = Vec::with_capacity(delay);
+        for _ in 0..delay {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            buffer.push((seed as f32 / u32::MAX as f32) * 2.0 - 1.0);
+        }
+
+        Self {
+            sample_rate,
+            total_frames: (sample_rate as f32 * 0.62) as u32,
+            frame: 0,
+            channel: 0,
+            buffer,
+            index: 0,
+            pan,
+            master_volume,
+        }
+    }
+
+    fn mono_sample(&mut self) -> f32 {
+        let next_index = (self.index + 1) % self.buffer.len();
+        let current = self.buffer[self.index];
+        let next = self.buffer[next_index];
+        let filtered = (current + next) * 0.497;
+        self.buffer[self.index] = filtered;
+        self.index = next_index;
+        let t = self.frame as f32 / self.sample_rate as f32;
+        soft_clip(current * (-2.2 * t).exp() * self.master_volume * 0.34)
+    }
+}
+
+impl Iterator for GuitarSource {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.frame >= self.total_frames {
+            return None;
+        }
+
+        let mono = self.mono_sample();
+        let left_gain = ((1.0 - self.pan) * 0.5).sqrt();
+        let right_gain = ((1.0 + self.pan) * 0.5).sqrt();
+        let sample = if self.channel == 0 {
+            mono * left_gain
+        } else {
+            mono * right_gain
+        };
+
+        self.channel += 1;
+        if self.channel == 2 {
+            self.channel = 0;
+            self.frame += 1;
+        }
+
+        Some(sample)
+    }
+}
+
+impl Source for GuitarSource {
+    fn current_frame_len(&self) -> Option<usize> {
+        Some(((self.total_frames - self.frame) * 2 - self.channel as u32) as usize)
+    }
+
+    fn channels(&self) -> u16 {
+        2
+    }
+
+    fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        Some(Duration::from_millis(620))
+    }
+}
+
+fn piano_note(frequency: f32, frame: u32, sample_rate: u32, gain: f32) -> f32 {
+    let t = frame as f32 / sample_rate as f32;
+    let attack = (t / 0.008).clamp(0.0, 1.0);
+    let fast_decay = (-7.0 * t).exp();
+    let slow_decay = (-1.7 * t).exp();
+    let hammer = (TAU * frequency * 9.0 * t).sin() * (-70.0 * t).exp() * 0.035;
+    let tone = (TAU * frequency * t).sin() * 1.0
+        + (TAU * frequency * 2.0 * t).sin() * 0.44
+        + (TAU * frequency * 3.01 * t).sin() * 0.22
+        + (TAU * frequency * 4.02 * t).sin() * 0.11
+        + (TAU * frequency * 5.0 * t).sin() * 0.055;
+    soft_clip((tone * attack * (fast_decay * 0.72 + slow_decay * 0.28) + hammer) * gain)
+}
+
+fn stereo_next(
+    frame: &mut u32,
+    channel: &mut u16,
+    total_frames: u32,
+    pan: f32,
+    mono: f32,
+) -> Option<f32> {
+    if *frame >= total_frames {
+        return None;
+    }
+
+    let left_gain = ((1.0 - pan) * 0.5).sqrt();
+    let right_gain = ((1.0 + pan) * 0.5).sqrt();
+    let sample = if *channel == 0 {
+        mono * left_gain
+    } else {
+        mono * right_gain
+    };
+
+    *channel += 1;
+    if *channel == 2 {
+        *channel = 0;
+        *frame += 1;
+    }
+
+    Some(sample)
 }
 
 impl Iterator for MelodySource {

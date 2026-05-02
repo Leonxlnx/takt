@@ -28,6 +28,11 @@ Takt's built-in profiles are procedural approximations. They are designed to cre
 
 These profiles are synthesized, not sampled. That keeps the project redistributable and avoids copying sounds from commercial apps. Future recorded packs should live in `sounds/` with clear licensing.
 
-## Melody Mode
+## Instrument Modes
 
-Melody mode ignores the switch profile and advances an original pop-style note sequence on every keypress. The sequence loops indefinitely.
+Instrument modes ignore the switch profile.
+
+- `piano` plays the next note as a piano-like additive tone.
+- `guitar` plays the next note as a Karplus-Strong plucked string.
+- `chords` plays the next original pop chord.
+- `melody` advances an original pop-style note sequence on every keypress and loops indefinitely.

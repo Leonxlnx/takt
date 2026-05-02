@@ -45,11 +45,15 @@ function startEngine(config = readConfig()) {
     throw new Error(`Sound engine not found: ${enginePath}`);
   }
 
-  const child = spawn(enginePath, ['--mode', config.mode || 'keys', '--profile', config.profile, '--volume', String(config.volume)], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
-  });
+  const child = spawn(
+    enginePath,
+    ['--mode', config.mode || 'keys', '--profile', config.profile, '--volume', String(config.volume)],
+    {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    }
+  );
   child.unref();
 }
 

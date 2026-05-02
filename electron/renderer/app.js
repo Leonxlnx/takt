@@ -69,12 +69,19 @@ mode.addEventListener('change', updateModeUi);
 
 function updateModeUi() {
   const melody = mode.value === 'melody';
+  const instrument = ['piano', 'guitar', 'chords'].includes(mode.value);
   modeHint.textContent = melody
     ? 'Each keypress advances an original pop-style melody note. It loops forever.'
-    : 'Short clean mechanical sounds on each keypress.';
-  profile.disabled = melody;
-  profileHint.textContent = melody
-    ? 'Profile is ignored in melody mode.'
+    : mode.value === 'piano'
+      ? 'Each keypress plays the next note as a piano-like tone.'
+      : mode.value === 'guitar'
+        ? 'Each keypress plucks the next note with string-style synthesis.'
+        : mode.value === 'chords'
+          ? 'Each keypress plays the next original pop chord.'
+          : 'Short clean mechanical sounds on each keypress.';
+  profile.disabled = melody || instrument;
+  profileHint.textContent = melody || instrument
+    ? 'Profile is used only for clean key sounds.'
     : hints[profile.value] || hints['clean-muted'];
 }
 
