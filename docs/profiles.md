@@ -32,7 +32,9 @@ These profiles are synthesized, not sampled. That keeps the project redistributa
 
 Instrument modes ignore the switch profile.
 
-- `piano` plays the next note as a piano-like additive tone.
-- `guitar` plays the next note as a Karplus-Strong plucked string.
-- `chords` plays the next original pop chord.
-- `melody` advances an original pop-style note sequence on every keypress and loops indefinitely.
+- `piano` plays generated piano-like notes from changing original pop progressions.
+- `guitar` plays generated guitar-style plucks from changing original pop progressions.
+- `chords` plays generated original pop chords with bass and upper tones.
+- `melody` plays generated original pop-style lead notes with randomized key, scale, and chord tones.
+
+Held keys trigger once until released, so Windows key-repeat does not create sound spam.

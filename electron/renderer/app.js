@@ -71,13 +71,13 @@ function updateModeUi() {
   const melody = mode.value === 'melody';
   const instrument = ['piano', 'guitar', 'chords'].includes(mode.value);
   modeHint.textContent = melody
-    ? 'Each keypress advances an original pop-style melody note. It loops forever.'
+    ? 'Each keypress plays a new original pop-style lead note. It keeps changing.'
     : mode.value === 'piano'
-      ? 'Each keypress plays the next note as a piano-like tone.'
+      ? 'Each keypress plays a generated piano note from a changing pop progression.'
       : mode.value === 'guitar'
-        ? 'Each keypress plucks the next note with string-style synthesis.'
+        ? 'Each keypress plays a generated guitar-style pluck from a changing progression.'
         : mode.value === 'chords'
-          ? 'Each keypress plays the next original pop chord.'
+          ? 'Each keypress plays a generated original pop chord. Good for song-like typing.'
           : 'Short clean mechanical sounds on each keypress.';
   profile.disabled = melody || instrument;
   profileHint.textContent = melody || instrument

@@ -1,6 +1,6 @@
 {
   "name": "takt",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Clean keyboard sound for Windows",
   "main": "electron/main.cjs",
   "private": true,

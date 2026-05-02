@@ -5,7 +5,7 @@ use std::{
     f32::consts::TAU,
     io::{self, Write},
     sync::{
-        OnceLock,
+        Mutex, OnceLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Sender},
     },
@@ -23,12 +23,13 @@ use windows::Win32::{
         WindowsAndMessaging::{
             CallNextHookEx, DispatchMessageW, GetMessageW, HHOOK, KBDLLHOOKSTRUCT, MSG,
             PostQuitMessage, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx,
-            WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
+            WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
         },
     },
 };
 
 static KEY_EVENTS: OnceLock<Sender<KeyEvent>> = OnceLock::new();
+static PRESSED_KEYS: OnceLock<Mutex<[bool; 256]>> = OnceLock::new();
 static RUNNING: AtomicBool = AtomicBool::new(true);
 
 #[derive(Clone, Copy, Debug)]
@@ -305,6 +306,9 @@ fn main() -> Result<()> {
     KEY_EVENTS
         .set(tx)
         .map_err(|_| anyhow!("keyboard event channel was already initialized"))?;
+    PRESSED_KEYS
+        .set(Mutex::new([false; 256]))
+        .map_err(|_| anyhow!("keyboard state was already initialized"))?;
 
     let audio_settings = settings;
     let audio_thread = thread::spawn(move || run_audio(rx, audio_settings));
@@ -399,6 +403,7 @@ fn run_audio(rx: mpsc::Receiver<KeyEvent>, settings: Settings) -> Result<()> {
     let (_stream, handle) =
         OutputStream::try_default().context("failed to open default audio output")?;
     let mut melody_step = 0usize;
+    let mut music = MusicGenerator::new(0x5eed_cafe);
 
     while RUNNING.load(Ordering::SeqCst) {
         let Ok(event) = rx.recv_timeout(Duration::from_millis(100)) else {
@@ -414,22 +419,27 @@ fn run_audio(rx: mpsc::Receiver<KeyEvent>, settings: Settings) -> Result<()> {
                 handle.play_raw(source.convert_samples())?;
             }
             SoundMode::Melody => {
-                let source = MelodySource::new(melody_step, settings.master_volume, pan);
+                let source = MelodySource::new(music.next_note(), settings.master_volume, pan);
                 melody_step = melody_step.wrapping_add(1);
                 handle.play_raw(source.convert_samples())?;
             }
             SoundMode::Piano => {
-                let source = PianoSource::new(melody_step, settings.master_volume, pan);
+                let source = PianoSource::new(music.next_note(), settings.master_volume, pan);
                 melody_step = melody_step.wrapping_add(1);
                 handle.play_raw(source.convert_samples())?;
             }
             SoundMode::Guitar => {
-                let source = GuitarSource::new(melody_step, settings.master_volume, pan);
+                let source = GuitarSource::new(
+                    music.next_note() * 0.5,
+                    melody_step,
+                    settings.master_volume,
+                    pan,
+                );
                 melody_step = melody_step.wrapping_add(1);
                 handle.play_raw(source.convert_samples())?;
             }
             SoundMode::Chords => {
-                let source = ChordSource::new(melody_step, settings.master_volume, pan);
+                let source = ChordSource::new(music.next_chord(), settings.master_volume, pan);
                 melody_step = melody_step.wrapping_add(1);
                 handle.play_raw(source.convert_samples())?;
             }
@@ -474,12 +484,33 @@ unsafe extern "system" fn low_level_keyboard_proc(
     w_param: WPARAM,
     l_param: LPARAM,
 ) -> LRESULT {
-    if code >= 0 && (w_param.0 as u32 == WM_KEYDOWN || w_param.0 as u32 == WM_SYSKEYDOWN) {
+    if code >= 0 {
         let event = unsafe { *(l_param.0 as *const KBDLLHOOKSTRUCT) };
-        if let Some(sender) = KEY_EVENTS.get() {
-            let _ = sender.send(KeyEvent {
-                vk_code: event.vkCode,
-            });
+        let message = w_param.0 as u32;
+        let key_index = event.vkCode as usize;
+
+        if key_index < 256 && (message == WM_KEYDOWN || message == WM_SYSKEYDOWN) {
+            if let Some(keys) = PRESSED_KEYS.get() {
+                let Ok(mut keys) = keys.lock() else {
+                    return unsafe { CallNextHookEx(HHOOK::default(), code, w_param, l_param) };
+                };
+                if keys[key_index] {
+                    return unsafe { CallNextHookEx(HHOOK::default(), code, w_param, l_param) };
+                }
+                keys[key_index] = true;
+            }
+
+            if let Some(sender) = KEY_EVENTS.get() {
+                let _ = sender.send(KeyEvent {
+                    vk_code: event.vkCode,
+                });
+            }
+        } else if key_index < 256 && (message == WM_KEYUP || message == WM_SYSKEYUP) {
+            if let Some(keys) = PRESSED_KEYS.get() {
+                if let Ok(mut keys) = keys.lock() {
+                    keys[key_index] = false;
+                }
+            }
         }
     }
 
@@ -572,24 +603,117 @@ fn soft_clip(sample: f32) -> f32 {
     (sample * 1.45).tanh() * 0.96
 }
 
-const POP_MELODY: [f32; 32] = [
-    523.25, 659.25, 783.99, 659.25, 587.33, 659.25, 783.99, 987.77, 880.0, 783.99, 659.25, 587.33,
-    523.25, 587.33, 659.25, 783.99, 392.0, 493.88, 587.33, 659.25, 587.33, 493.88, 440.0, 493.88,
-    523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 523.25,
+const MAJOR_SCALE: [i32; 7] = [0, 2, 4, 5, 7, 9, 11];
+const MINOR_SCALE: [i32; 7] = [0, 2, 3, 5, 7, 8, 10];
+const PENTATONIC_SCALE: [i32; 5] = [0, 2, 4, 7, 9];
+const ROOTS: [i32; 8] = [48, 50, 51, 53, 55, 56, 58, 60];
+const PROGRESSIONS: [[usize; 4]; 8] = [
+    [0, 4, 5, 3],
+    [5, 3, 0, 4],
+    [0, 5, 3, 4],
+    [3, 4, 0, 5],
+    [0, 2, 5, 4],
+    [5, 4, 3, 4],
+    [0, 4, 2, 5],
+    [3, 0, 4, 5],
 ];
 
-const POP_BASS: [f32; 8] = [261.63, 392.0, 440.0, 349.23, 261.63, 329.63, 392.0, 349.23];
+struct MusicGenerator {
+    rng: u32,
+    root_midi: i32,
+    scale_id: usize,
+    progression_id: usize,
+    step: usize,
+    last_degree: i32,
+}
 
-const POP_CHORDS: [[f32; 4]; 8] = [
-    [261.63, 329.63, 392.0, 523.25],
-    [392.0, 493.88, 587.33, 783.99],
-    [440.0, 523.25, 659.25, 880.0],
-    [349.23, 440.0, 523.25, 698.46],
-    [293.66, 349.23, 440.0, 587.33],
-    [329.63, 392.0, 493.88, 659.25],
-    [392.0, 493.88, 659.25, 783.99],
-    [261.63, 329.63, 392.0, 659.25],
-];
+impl MusicGenerator {
+    fn new(seed: u32) -> Self {
+        Self {
+            rng: seed,
+            root_midi: 48,
+            scale_id: 0,
+            progression_id: 0,
+            step: 0,
+            last_degree: 0,
+        }
+    }
+
+    fn next_note(&mut self) -> f32 {
+        self.refresh_phrase();
+        let chord_root = PROGRESSIONS[self.progression_id][(self.step / 4) % 4] as i32;
+        let chord_tones = [chord_root, chord_root + 2, chord_root + 4, chord_root + 6];
+        let degree = if self.chance(72) {
+            chord_tones[self.range(chord_tones.len())]
+        } else {
+            let motion = [-2, -1, 1, 2, 3][self.range(5)];
+            self.last_degree + motion
+        };
+        let octave = if self.chance(18) { 2 } else { 1 };
+        self.last_degree = degree.clamp(0, 10);
+        self.step = self.step.wrapping_add(1);
+        self.degree_to_freq(degree, octave)
+    }
+
+    fn next_chord(&mut self) -> [f32; 5] {
+        self.refresh_phrase();
+        let root = PROGRESSIONS[self.progression_id][(self.step / 2) % 4] as i32;
+        let extension = if self.chance(45) { 8 } else { 6 };
+        self.step = self.step.wrapping_add(1);
+        [
+            self.degree_to_freq(root, -1),
+            self.degree_to_freq(root, 0),
+            self.degree_to_freq(root + 2, 0),
+            self.degree_to_freq(root + 4, 0),
+            self.degree_to_freq(root + extension, 0),
+        ]
+    }
+
+    fn refresh_phrase(&mut self) {
+        if self.step % 32 != 0 {
+            return;
+        }
+        self.root_midi = ROOTS[self.range(ROOTS.len())];
+        self.scale_id = self.range(3);
+        self.progression_id = self.range(PROGRESSIONS.len());
+        self.last_degree = PROGRESSIONS[self.progression_id][0] as i32;
+    }
+
+    fn degree_to_freq(&self, degree: i32, octave: i32) -> f32 {
+        let scale = self.scale();
+        let len = scale.len() as i32;
+        let wrapped = degree.rem_euclid(len);
+        let octave_shift = degree.div_euclid(len);
+        midi_to_freq(self.root_midi + scale[wrapped as usize] + (octave + octave_shift) * 12)
+    }
+
+    fn scale(&self) -> &'static [i32] {
+        match self.scale_id {
+            1 => &MINOR_SCALE,
+            2 => &PENTATONIC_SCALE,
+            _ => &MAJOR_SCALE,
+        }
+    }
+
+    fn chance(&mut self, percent: u32) -> bool {
+        self.next_u32() % 100 < percent
+    }
+
+    fn range(&mut self, end: usize) -> usize {
+        (self.next_u32() as usize) % end
+    }
+
+    fn next_u32(&mut self) -> u32 {
+        self.rng ^= self.rng << 13;
+        self.rng ^= self.rng >> 17;
+        self.rng ^= self.rng << 5;
+        self.rng
+    }
+}
+
+fn midi_to_freq(midi: i32) -> f32 {
+    440.0 * 2.0f32.powf((midi as f32 - 69.0) / 12.0)
+}
 
 struct MelodySource {
     sample_rate: u32,
@@ -602,7 +726,7 @@ struct MelodySource {
 }
 
 impl MelodySource {
-    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+    fn new(frequency: f32, master_volume: f32, pan: f32) -> Self {
         let sample_rate = 48_000;
         let total_frames = (sample_rate as f32 * 0.18) as u32;
         Self {
@@ -610,7 +734,7 @@ impl MelodySource {
             total_frames,
             frame: 0,
             channel: 0,
-            frequency: POP_MELODY[step % POP_MELODY.len()],
+            frequency,
             pan,
             master_volume,
         }
@@ -639,7 +763,7 @@ struct PianoSource {
 }
 
 impl PianoSource {
-    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+    fn new(frequency: f32, master_volume: f32, pan: f32) -> Self {
         let sample_rate = 48_000;
         let total_frames = (sample_rate as f32 * 0.58) as u32;
         Self {
@@ -647,7 +771,7 @@ impl PianoSource {
             total_frames,
             frame: 0,
             channel: 0,
-            frequency: POP_MELODY[step % POP_MELODY.len()],
+            frequency,
             pan,
             master_volume,
         }
@@ -701,14 +825,13 @@ struct ChordSource {
     total_frames: u32,
     frame: u32,
     channel: u16,
-    chord: [f32; 4],
-    bass: f32,
+    chord: [f32; 5],
     pan: f32,
     master_volume: f32,
 }
 
 impl ChordSource {
-    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+    fn new(chord: [f32; 5], master_volume: f32, pan: f32) -> Self {
         let sample_rate = 48_000;
         let total_frames = (sample_rate as f32 * 0.78) as u32;
         Self {
@@ -716,33 +839,28 @@ impl ChordSource {
             total_frames,
             frame: 0,
             channel: 0,
-            chord: POP_CHORDS[step % POP_CHORDS.len()],
-            bass: POP_BASS[step % POP_BASS.len()],
+            chord,
             pan,
             master_volume,
         }
     }
 
     fn mono_sample(&self) -> f32 {
-        let bass = piano_note(
-            self.bass,
-            self.frame,
-            self.sample_rate,
-            self.master_volume * 0.10,
-        );
         let chord = self
             .chord
             .iter()
-            .map(|freq| {
+            .enumerate()
+            .map(|(index, freq)| {
+                let gain = if index == 0 { 0.14 } else { 0.085 };
                 piano_note(
                     *freq,
                     self.frame,
                     self.sample_rate,
-                    self.master_volume * 0.095,
+                    self.master_volume * gain,
                 )
             })
             .sum::<f32>();
-        soft_clip(bass + chord)
+        soft_clip(chord)
     }
 }
 
@@ -791,9 +909,8 @@ struct GuitarSource {
 }
 
 impl GuitarSource {
-    fn new(step: usize, master_volume: f32, pan: f32) -> Self {
+    fn new(frequency: f32, step: usize, master_volume: f32, pan: f32) -> Self {
         let sample_rate = 48_000;
-        let frequency = POP_MELODY[step % POP_MELODY.len()] * 0.5;
         let delay = (sample_rate as f32 / frequency).max(2.0) as usize;
         let mut seed = 0x1234_5678u32 ^ step as u32;
         let mut buffer = Vec::with_capacity(delay);

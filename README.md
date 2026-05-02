@@ -11,7 +11,8 @@ Takt is a small Windows utility that adds satisfying switch-style audio to every
 - Stereo panning based on approximate key position.
 - Per-key pitch variation so typing feels less repetitive.
 - 17 built-in synthesized switch profiles.
-- Multiple sound modes: clean key sounds, piano notes, guitar plucks, pop chords, and looping melody notes.
+- Multiple sound modes: clean key sounds plus generated piano, guitar, pop chords, and pop lead notes.
+- Held keys play once until released, so holding a key does not spam sounds.
 - Electron settings app. No PowerShell UI.
 - Local-first privacy model with no telemetry and no network calls.
 
