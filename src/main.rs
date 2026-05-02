@@ -605,26 +605,36 @@ fn soft_clip(sample: f32) -> f32 {
 
 const MAJOR_SCALE: [i32; 7] = [0, 2, 4, 5, 7, 9, 11];
 const MINOR_SCALE: [i32; 7] = [0, 2, 3, 5, 7, 8, 10];
-const PENTATONIC_SCALE: [i32; 5] = [0, 2, 4, 7, 9];
 const ROOTS: [i32; 8] = [48, 50, 51, 53, 55, 56, 58, 60];
-const PROGRESSIONS: [[usize; 4]; 8] = [
-    [0, 4, 5, 3],
-    [5, 3, 0, 4],
+const MAJOR_PROGRESSIONS: [[usize; 4]; 8] = [
     [0, 5, 3, 4],
-    [3, 4, 0, 5],
-    [0, 2, 5, 4],
-    [5, 4, 3, 4],
-    [0, 4, 2, 5],
+    [5, 3, 0, 4],
+    [0, 4, 5, 3],
     [3, 0, 4, 5],
+    [0, 3, 4, 0],
+    [5, 4, 3, 4],
+    [0, 2, 5, 4],
+    [3, 4, 0, 0],
+];
+const MINOR_PROGRESSIONS: [[usize; 4]; 8] = [
+    [0, 5, 2, 6],
+    [0, 3, 5, 4],
+    [5, 6, 0, 2],
+    [0, 2, 6, 5],
+    [3, 6, 0, 0],
+    [0, 5, 6, 4],
+    [5, 3, 6, 0],
+    [0, 6, 5, 0],
 ];
 
 struct MusicGenerator {
     rng: u32,
     root_midi: i32,
-    scale_id: usize,
+    minor: bool,
     progression_id: usize,
     step: usize,
-    last_degree: i32,
+    last_melody_midi: i32,
+    last_voicing: [i32; 4],
 }
 
 impl MusicGenerator {
@@ -632,40 +642,47 @@ impl MusicGenerator {
         Self {
             rng: seed,
             root_midi: 48,
-            scale_id: 0,
+            minor: false,
             progression_id: 0,
             step: 0,
-            last_degree: 0,
+            last_melody_midi: 64,
+            last_voicing: [60, 64, 67, 71],
         }
     }
 
     fn next_note(&mut self) -> f32 {
         self.refresh_phrase();
-        let chord_root = PROGRESSIONS[self.progression_id][(self.step / 4) % 4] as i32;
-        let chord_tones = [chord_root, chord_root + 2, chord_root + 4, chord_root + 6];
-        let degree = if self.chance(72) {
-            chord_tones[self.range(chord_tones.len())]
+        let chord_degree = self.chord_degree_at((self.step / 4) % 4);
+        let chord = self.chord_midi(chord_degree, 60);
+        let motion = [-2, -1, 1, 2][self.range(4)];
+        let passing = self.scale_midi_near(self.last_melody_midi + motion);
+        let target = if self.step % 8 == 7 {
+            chord[0]
+        } else if self.step % 4 == 3 {
+            chord[1]
+        } else if self.chance(82) {
+            chord[self.range(chord.len())]
         } else {
-            let motion = [-2, -1, 1, 2, 3][self.range(5)];
-            self.last_degree + motion
+            passing
         };
-        let octave = if self.chance(18) { 2 } else { 1 };
-        self.last_degree = degree.clamp(0, 10);
+        let midi = self.voice_lead_note(target);
+        self.last_melody_midi = midi;
         self.step = self.step.wrapping_add(1);
-        self.degree_to_freq(degree, octave)
+        midi_to_freq(midi)
     }
 
     fn next_chord(&mut self) -> [f32; 5] {
         self.refresh_phrase();
-        let root = PROGRESSIONS[self.progression_id][(self.step / 2) % 4] as i32;
-        let extension = if self.chance(45) { 8 } else { 6 };
+        let root_degree = self.chord_degree_at(self.step % 4);
+        let bass = self.degree_root_midi(root_degree, 36);
+        let voicing = self.voice_led_chord(root_degree);
         self.step = self.step.wrapping_add(1);
         [
-            self.degree_to_freq(root, -1),
-            self.degree_to_freq(root, 0),
-            self.degree_to_freq(root + 2, 0),
-            self.degree_to_freq(root + 4, 0),
-            self.degree_to_freq(root + extension, 0),
+            midi_to_freq(bass),
+            midi_to_freq(voicing[0]),
+            midi_to_freq(voicing[1]),
+            midi_to_freq(voicing[2]),
+            midi_to_freq(voicing[3]),
         ]
     }
 
@@ -674,25 +691,166 @@ impl MusicGenerator {
             return;
         }
         self.root_midi = ROOTS[self.range(ROOTS.len())];
-        self.scale_id = self.range(3);
-        self.progression_id = self.range(PROGRESSIONS.len());
-        self.last_degree = PROGRESSIONS[self.progression_id][0] as i32;
+        self.minor = self.chance(42);
+        self.progression_id = self.range(MAJOR_PROGRESSIONS.len());
+        let home = self.degree_root_midi(self.chord_degree_at(0), 60);
+        self.last_melody_midi = home + 4;
+        self.last_voicing = self.chord_midi(self.chord_degree_at(0), 60);
     }
 
-    fn degree_to_freq(&self, degree: i32, octave: i32) -> f32 {
+    fn chord_degree_at(&self, index: usize) -> usize {
+        if self.minor {
+            MINOR_PROGRESSIONS[self.progression_id][index % 4]
+        } else {
+            MAJOR_PROGRESSIONS[self.progression_id][index % 4]
+        }
+    }
+
+    fn chord_midi(&self, degree: usize, base: i32) -> [i32; 4] {
+        let root = self.degree_root_midi(degree, base);
+        let intervals = self.chord_intervals(degree);
+        [
+            root + intervals[0],
+            root + intervals[1],
+            root + intervals[2],
+            root + intervals[3],
+        ]
+    }
+
+    fn voice_led_chord(&mut self, degree: usize) -> [i32; 4] {
+        let root = self.degree_root_midi(degree, 60);
+        let intervals = self.chord_intervals(degree);
+        let mut best = [
+            root,
+            root + intervals[1],
+            root + intervals[2],
+            root + intervals[3],
+        ];
+        let mut best_score = i32::MAX;
+
+        for octave_shift in -1..=1 {
+            for inversion in 0..4 {
+                let mut candidate = [0; 4];
+                for note in 0..4 {
+                    let source = (note + inversion) % 4;
+                    let lift = if note + inversion >= 4 { 12 } else { 0 };
+                    candidate[note] = root + intervals[source] + lift + octave_shift * 12;
+                }
+                candidate.sort();
+                let center_penalty = (candidate.iter().sum::<i32>() / 4 - 65).abs() * 2;
+                let movement = candidate
+                    .iter()
+                    .zip(self.last_voicing.iter())
+                    .map(|(next, last)| (next - last).abs())
+                    .sum::<i32>();
+                let score = movement + center_penalty;
+                if score < best_score {
+                    best = candidate;
+                    best_score = score;
+                }
+            }
+        }
+
+        self.last_voicing = best;
+        best
+    }
+
+    fn chord_intervals(&self, degree: usize) -> [i32; 4] {
+        let minor_quality = if self.minor {
+            matches!(degree, 0 | 3 | 4)
+        } else {
+            matches!(degree, 1 | 2 | 5)
+        };
+        let major_quality = if self.minor {
+            matches!(degree, 2 | 5 | 6)
+        } else {
+            matches!(degree, 0 | 3 | 4)
+        };
+
+        if minor_quality {
+            [
+                0,
+                3,
+                7,
+                if self.chance_readonly(degree as u32) {
+                    10
+                } else {
+                    14
+                },
+            ]
+        } else if major_quality {
+            [
+                0,
+                4,
+                7,
+                if self.chance_readonly(degree as u32) {
+                    11
+                } else {
+                    14
+                },
+            ]
+        } else {
+            [0, 5, 7, 10]
+        }
+    }
+
+    fn degree_root_midi(&self, degree: usize, base: i32) -> i32 {
         let scale = self.scale();
-        let len = scale.len() as i32;
-        let wrapped = degree.rem_euclid(len);
-        let octave_shift = degree.div_euclid(len);
-        midi_to_freq(self.root_midi + scale[wrapped as usize] + (octave + octave_shift) * 12)
+        let root = self.root_midi + scale[degree % scale.len()];
+        let mut midi = root;
+        while midi < base {
+            midi += 12;
+        }
+        while midi >= base + 12 {
+            midi -= 12;
+        }
+        midi
+    }
+
+    fn voice_lead_note(&self, target: i32) -> i32 {
+        let mut best = target;
+        let mut best_distance = i32::MAX;
+        for octave in -2..=2 {
+            let candidate = target + octave * 12;
+            if !(57..=86).contains(&candidate) {
+                continue;
+            }
+            let distance = (candidate - self.last_melody_midi).abs();
+            if distance < best_distance {
+                best = candidate;
+                best_distance = distance;
+            }
+        }
+        best
+    }
+
+    fn scale_midi_near(&self, target: i32) -> i32 {
+        let scale = self.scale();
+        let mut best = target;
+        let mut best_distance = i32::MAX;
+        for octave in 0..5 {
+            for interval in scale {
+                let candidate = self.root_midi + interval + octave * 12;
+                let distance = (candidate - target).abs();
+                if distance < best_distance {
+                    best = candidate;
+                    best_distance = distance;
+                }
+            }
+        }
+        best.clamp(57, 86)
     }
 
     fn scale(&self) -> &'static [i32] {
-        match self.scale_id {
-            1 => &MINOR_SCALE,
-            2 => &PENTATONIC_SCALE,
-            _ => &MAJOR_SCALE,
+        if self.minor {
+            &MINOR_SCALE
+        } else {
+            &MAJOR_SCALE
         }
+    }
+
+    fn chance_readonly(&self, salt: u32) -> bool {
+        ((self.rng ^ salt.wrapping_mul(747_796_405)) % 100) < 50
     }
 
     fn chance(&mut self, percent: u32) -> bool {
